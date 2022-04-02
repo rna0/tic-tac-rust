@@ -1,30 +1,49 @@
 use eframe::egui::{Button, CentralPanel, Context, Response, Ui};
-use eframe::epaint::Vec2;
 use eframe::epi::{App, Frame};
 use eframe::{run_native, NativeOptions};
 
-struct TicTacToeCells {
-    is_x_turn: bool,
-    cells: Vec<TicTacToeCell>,
+struct TicTacToe {
+    initial_window_size: [f32; 2],
+    x_turn: bool,
+    cells: [Cell; 9],
 }
 
-impl TicTacToeCells {
-    fn new() -> TicTacToeCells {
-        let iter = (0..9).map(|a| TicTacToeCell {
-            cell: "■",
-        });
-        TicTacToeCells {
-            is_x_turn: true,
-            cells: Vec::from_iter(iter),
+impl TicTacToe {
+    fn new(size: [f32; 2]) -> TicTacToe {
+        TicTacToe {
+            x_turn: true,
+            cells: [Cell::Empty; 9],
+            initial_window_size: size,
         }
     }
 }
 
-struct TicTacToeCell {
-    cell: &'static str,
+fn click_button(cell: &mut Cell, x_turn: bool) {
+    if x_turn {
+        *cell = Cell::X;
+    } else {
+        *cell = Cell::O;
+    }
 }
 
-impl App for TicTacToeCells {
+#[derive(Copy, Clone)]
+enum Cell {
+    X,
+    O,
+    Empty,
+}
+
+impl Cell {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Cell::X => "X",
+            Cell::O => "O",
+            Cell::Empty => " ",
+        }
+    }
+}
+
+impl App for TicTacToe {
     fn setup(
         &mut self,
         _ctx: &Context,
@@ -38,15 +57,12 @@ impl App for TicTacToeCells {
             for row in self.cells.chunks_exact_mut(3) {
                 ui.horizontal(|ui| {
                     for cell in row.iter_mut() {
-                        let cool_button = create_cool_button(ui, cell);
-                        if cool_button.clicked() {
-                            if self.is_x_turn{
-                                cell.cell = "X";
-                            }
-                            else{
-                                cell.cell = "O";
-                            }
-                            self.is_x_turn = !self.is_x_turn;
+                        let cool_button = cool_button(ui, cell);
+                        if cool_button.clicked() && matches!(cell, Cell::Empty) {
+                            click_button(cell, self.x_turn);
+                            self.x_turn = !self.x_turn;
+                            // TODO: check if won. how to do it mid borrow of mut self?
+                            // TODO: change the layout to endgame?
                             return;
                         }
                     }
@@ -60,14 +76,15 @@ impl App for TicTacToeCells {
     }
 }
 
-fn create_cool_button(ui: &mut Ui, cell: &TicTacToeCell) -> Response {
-    let button = Button::new(cell.cell);
+fn cool_button(ui: &mut Ui, cell: &Cell) -> Response {
+    let button = Button::new(cell.as_str());
     ui.add_sized([100., 100.], button)
 }
 
 fn main() {
-    let app = TicTacToeCells::new();
+    let size = [340., 340.];
+    let app = TicTacToe::new(size);
     let mut win_option = NativeOptions::default();
-    win_option.initial_window_size = Some(Vec2::new(540., 540.));
+    win_option.initial_window_size = Some(size.into());
     run_native(Box::new(app), win_option);
 }
