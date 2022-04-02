@@ -1,4 +1,4 @@
-use eframe::egui::{CentralPanel, Context, ScrollArea};
+use eframe::egui::{Button, CentralPanel, Context, ScrollArea};
 use eframe::epaint::Vec2;
 use eframe::epi::{App, Frame};
 use eframe::{run_native, NativeOptions};
@@ -9,8 +9,8 @@ struct TicTacToeCells {
 
 impl TicTacToeCells {
     fn new() -> TicTacToeCells {
-        let iter = (0..90).map(|a| TicTacToeCell {
-            cell: format!("X{}", a),
+        let iter = (0..9).map(|a| TicTacToeCell {
+            cell: "■".to_string(),
         });
         TicTacToeCells {
             cells: Vec::from_iter(iter),
@@ -29,11 +29,12 @@ impl App for TicTacToeCells {
 
     fn update(&mut self, ctx: &Context, frame: &Frame) {
         CentralPanel::default().show(ctx, |ui| {
-            ScrollArea::vertical().show(ui, |ui| {
-                for a in &self.cells {
-                    ui.label(&a.cell);
+            for a in &self.cells {
+                
+                if ui.button(&a.cell).clicked() {
+                    
                 }
-            })
+            }
         });
     }
 
