@@ -1,38 +1,54 @@
-use eframe::egui::{Button, FontFamily, FontDefinitions, CentralPanel, Context, Response, Ui};
+use eframe::egui::{Button, CentralPanel, Context, Response, Ui};
 use eframe::epaint::Vec2;
 use eframe::epi::{App, Frame};
 use eframe::{run_native, NativeOptions};
 
 struct TicTacToeCells {
+    is_x_turn: bool,
     cells: Vec<TicTacToeCell>,
 }
 
 impl TicTacToeCells {
     fn new() -> TicTacToeCells {
         let iter = (0..9).map(|a| TicTacToeCell {
-            cell: "■".to_string(),
+            cell: "■",
         });
         TicTacToeCells {
+            is_x_turn: true,
             cells: Vec::from_iter(iter),
         }
     }
 }
 
 struct TicTacToeCell {
-    cell: String,
+    cell: &'static str,
 }
 
 impl App for TicTacToeCells {
-    fn setup(&mut self, ctx: &Context, _frame: &Frame, _storage: Option<&dyn eframe::epi::Storage>) {
+    fn setup(
+        &mut self,
+        _ctx: &Context,
+        _frame: &Frame,
+        _storage: Option<&dyn eframe::epi::Storage>,
+    ) {
     }
 
-    fn update(&mut self, ctx: &Context, frame: &Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &Frame) {
         CentralPanel::default().show(ctx, |ui| {
-            for row in self.cells.chunks(3) {
+            for row in self.cells.chunks_exact_mut(3) {
                 ui.horizontal(|ui| {
-                    for cell in row {
-                        let coolButton = create_cool_button(ui, cell);
-                        if coolButton.clicked() {}
+                    for cell in row.iter_mut() {
+                        let cool_button = create_cool_button(ui, cell);
+                        if cool_button.clicked() {
+                            if self.is_x_turn{
+                                cell.cell = "X";
+                            }
+                            else{
+                                cell.cell = "O";
+                            }
+                            self.is_x_turn = !self.is_x_turn;
+                            return;
+                        }
                     }
                 });
             }
@@ -45,7 +61,7 @@ impl App for TicTacToeCells {
 }
 
 fn create_cool_button(ui: &mut Ui, cell: &TicTacToeCell) -> Response {
-    let button = Button::new(&cell.cell);
+    let button = Button::new(cell.cell);
     ui.add_sized([100., 100.], button)
 }
 
