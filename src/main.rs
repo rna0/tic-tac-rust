@@ -2,16 +2,17 @@ use eframe::egui::{Button, CentralPanel, Context, Response, Ui};
 use eframe::epi::{App, Frame};
 use eframe::{run_native, NativeOptions};
 
+const BOARD_LEN: usize = 3;
 struct TicTacToe {
     x_turn: bool,
-    cells: [Cell; 9],
+    cells: [Cell; BOARD_LEN * BOARD_LEN],
 }
 
 impl TicTacToe {
     fn new() -> TicTacToe {
         TicTacToe {
             x_turn: true,
-            cells: [Cell::Empty; 9],
+            cells: [Cell::Empty; BOARD_LEN * BOARD_LEN],
         }
     }
 }
@@ -22,7 +23,6 @@ fn click_button(cell: &mut Cell, x_turn: &mut bool) {
     } else {
         *cell = Cell::O;
     }
-    *x_turn = !*x_turn
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -52,25 +52,28 @@ impl App for TicTacToe {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &Frame) {
+        let mut buttons = Vec::with_capacity(BOARD_LEN * BOARD_LEN);
         CentralPanel::default().show(ctx, |ui| {
-            for row in self.cells.chunks_exact_mut(3) {
+            for row in 0..BOARD_LEN {
                 ui.horizontal(|ui| {
-                    for cell in row.iter_mut() {
-                        let cool_button = cool_button(ui, cell);
-                        if cool_button.clicked() && matches!(cell, Cell::Empty) {
-                            click_button(cell, &mut self.x_turn);
-                            // TODO: check if won. how to do it mid borrow of mut self?
-                            // TODO: change the layout to endgame?
-                            // break;
-                        }
+                    for col in 0..BOARD_LEN {
+                        buttons.push(cool_button(ui, &self.cells[row * BOARD_LEN + col]));
                     }
                 });
             }
         });
 
-        let player = if !self.x_turn { Cell::X } else { Cell::O };
-        println!("{}", check_win(self.cells, &player));
-        check_draw(self.cells);
+        if let Some(i) = buttons.iter().position(|b| b.clicked()) {
+            if self.cells[i] == Cell::Empty {
+                click_button(&mut self.cells[i], &mut self.x_turn);
+                let player = if self.x_turn { Cell::X } else { Cell::O };
+                println!("Has won? {}", check_win(self.cells, &player));
+                if check_draw(self.cells) {
+                    println!("Draw");
+                }
+                self.x_turn = !self.x_turn;
+            }
+        }
     }
 
     fn name(&self) -> &str {
@@ -78,26 +81,25 @@ impl App for TicTacToe {
     }
 }
 
-fn check_draw(cells: [Cell; 9]) -> bool {
-    cells.iter().all(|c| *c == Cell::Empty)
+fn check_draw(cells: [Cell; BOARD_LEN * BOARD_LEN]) -> bool {
+    cells.iter().all(|c| *c != Cell::Empty)
 }
 
-// TODO: implement Player type (or Option<Cell> is better)
 fn won_with_cells(cells: &[Cell], player: &Cell) -> bool {
     cells.iter().all(|c| *c == *player)
 }
 
-fn check_win(cells: [Cell; 9], player: &Cell) -> bool {
+fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: &Cell) -> bool {
     // rows TODO: extract to functions
-    for row in cells.chunks_exact(3) {
+    for row in cells.chunks_exact(BOARD_LEN) {
         if won_with_cells(row, player) {
             return true;
         }
     }
     // col
-    for col in 0..2 {
+    for col in 0..BOARD_LEN {
         let running = cells[col..].to_owned().into_iter();
-        if won_with_cells(&running.step_by(3).collect::<Vec<Cell>>(), player) {
+        if won_with_cells(&running.step_by(BOARD_LEN).collect::<Vec<Cell>>(), player) {
             return true;
         }
     }
@@ -111,7 +113,7 @@ fn check_win(cells: [Cell; 9], player: &Cell) -> bool {
             .to_owned()
             .into_iter()
             .step_by(2)
-            .take(3)
+            .take(BOARD_LEN)
             .collect::<Vec<Cell>>(),
         player,
     ) {
