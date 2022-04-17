@@ -1,6 +1,6 @@
 use eframe::egui::{Button, CentralPanel, Context, Response, Ui};
 use eframe::epi::{App, Frame};
-use eframe::{run_native, NativeOptions};
+use eframe::run_native;
 
 mod tic_tac_toe;
 use tic_tac_toe::*;
@@ -15,27 +15,25 @@ impl App for TicTacToe {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &Frame) {
-        let board = self.board.clone();
+        let board = self.board;
 
         CentralPanel::default().show(ctx, |ui| {
             for (r, row) in board.chunks_exact(BOARD_LEN).enumerate() {
                 ui.horizontal(|ui| {
                     for (c, cell) in row.iter().enumerate() {
-                        if cool_button(ui, cell).clicked() {
-                            if let None = cell {
-                                play_cell(&mut self.board[r * BOARD_LEN + c], self.player);
+                        if cool_button(ui, cell).clicked() && cell.is_none() {
+                            play_cell(&mut self.board[r * BOARD_LEN + c], self.player);
 
-                                println!(
-                                    "Has {} won? {}",
-                                    self.player,
-                                    check_win(self.board, self.player)
-                                );
-                                if check_draw(self.board) {
-                                    println!("Draw");
-                                }
-
-                                self.player = self.player.opponent();
+                            println!(
+                                "Has {} won? {}",
+                                self.player,
+                                check_win(self.board, self.player)
+                            );
+                            if check_draw(self.board) {
+                                println!("Draw");
                             }
+
+                            self.player = self.player.opponent();
                         }
                     }
                 });
@@ -56,7 +54,9 @@ fn cool_button(ui: &mut Ui, cell: &Option<Player>) -> Response {
 fn main() {
     let size = [340., 340.];
     let app = TicTacToe::new();
-    let mut win_option = NativeOptions::default();
-    win_option.initial_window_size = Some(size.into());
+    let win_option = eframe::NativeOptions {
+        initial_window_size: Some(size.into()),
+        ..Default::default()
+    };
     run_native(Box::new(app), win_option);
 }

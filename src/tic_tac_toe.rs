@@ -62,7 +62,7 @@ pub fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player)
     }
     // col
     for col in 0..BOARD_LEN {
-        let running = cells[col..].to_owned().into_iter();
+        let running = cells[col..].iter().copied();
         if won_with_cells(
             &running.step_by(BOARD_LEN).collect::<Vec<Option<Player>>>(),
             player,
@@ -83,8 +83,8 @@ pub fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player)
     // reverse diagonal
     if won_with_cells(
         &cells[2..]
-            .to_owned()
-            .into_iter()
+            .iter()
+            .copied()
             .step_by(2)
             .take(BOARD_LEN)
             .collect::<Vec<Option<Player>>>(),
