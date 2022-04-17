@@ -4,40 +4,37 @@ use eframe::{run_native, NativeOptions};
 
 const BOARD_LEN: usize = 3;
 struct TicTacToe {
-    x_turn: bool,
-    cells: [Cell; BOARD_LEN * BOARD_LEN],
+    player: Player,
+    cells: [Option<Player>; BOARD_LEN * BOARD_LEN],
 }
 
 impl TicTacToe {
     fn new() -> TicTacToe {
         TicTacToe {
-            x_turn: true,
-            cells: [Cell::Empty; BOARD_LEN * BOARD_LEN],
+            player: Player::X,
+            cells: [None; BOARD_LEN * BOARD_LEN],
         }
     }
 }
 
-fn play_cell(cell: &mut Cell, x_turn: bool) {
-    if x_turn {
-        *cell = Cell::X;
-    } else {
-        *cell = Cell::O;
-    }
-}
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum Cell {
-    Empty,
+enum Player {
     X,
     O,
 }
 
-impl Cell {
+impl Player {
     fn as_str(&self) -> &'static str {
         match self {
-            Cell::X => "X",
-            Cell::O => "O",
-            Cell::Empty => " ",
+            Player::X => "X",
+            Player::O => "O",
+        }
+    }
+
+    pub fn opponent(&self) -> Player {
+        match self {
+            Player::X => Player::O,
+            Player::O => Player::X,
         }
     }
 }
@@ -58,16 +55,21 @@ impl App for TicTacToe {
             for (r, row) in board.chunks_exact(BOARD_LEN).enumerate() {
                 ui.horizontal(|ui| {
                     for (c, cell) in row.iter().enumerate() {
-                        if cool_button(ui, cell).clicked() && *cell == Cell::Empty {
-                            play_cell(&mut self.cells[r * BOARD_LEN + c], self.x_turn);
+                        if cool_button(ui, cell).clicked() {
+                            if let None = cell {
+                                play_cell(&mut self.cells[r * BOARD_LEN + c], self.player);
 
-                            let player = if self.x_turn { Cell::X } else { Cell::O };
-                            println!("Has won? {}", check_win(self.cells, player));
-                            if check_draw(self.cells) {
-                                println!("Draw");
+                                println!(
+                                    "Has {} won? {}",
+                                    self.player.as_str(),
+                                    check_win(self.cells, self.player)
+                                );
+                                if check_draw(self.cells) {
+                                    println!("Draw");
+                                }
+
+                                self.player = self.player.opponent();
                             }
-
-                            self.x_turn = !self.x_turn;
                         }
                     }
                 });
@@ -80,15 +82,21 @@ impl App for TicTacToe {
     }
 }
 
-fn check_draw(cells: [Cell; BOARD_LEN * BOARD_LEN]) -> bool {
-    cells.iter().all(|c| *c != Cell::Empty)
+fn play_cell(cell: &mut Option<Player>, player: Player) {
+    *cell = Some(player);
 }
 
-fn won_with_cells(cells: &[Cell], player: Cell) -> bool {
-    cells.iter().all(|c| *c == player)
+fn check_draw(cells: [Option<Player>; BOARD_LEN * BOARD_LEN]) -> bool {
+    !cells.contains(&None)
 }
 
-fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: Cell) -> bool {
+//TODO: Maybe use fuse? and try to have iterator instead of slice
+fn won_with_cells(cells: &[Option<Player>], player: Player) -> bool {
+    cells.iter().all(|o| o.map_or(false, |c| c == player))
+}
+
+// TODO: explore of using the board as 9 bit number for each player and just &= the hell out of it
+fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player) -> bool {
     // rows TODO: extract to functions
     for row in cells.chunks_exact(BOARD_LEN) {
         if won_with_cells(row, player) {
@@ -98,12 +106,21 @@ fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: Cell) -> bool {
     // col
     for col in 0..BOARD_LEN {
         let running = cells[col..].to_owned().into_iter();
-        if won_with_cells(&running.step_by(BOARD_LEN).collect::<Vec<Cell>>(), player) {
+        if won_with_cells(
+            &running.step_by(BOARD_LEN).collect::<Vec<Option<Player>>>(),
+            player,
+        ) {
             return true;
         }
     }
     // diagonal
-    if won_with_cells(&cells.into_iter().step_by(4).collect::<Vec<Cell>>(), player) {
+    if won_with_cells(
+        &cells
+            .into_iter()
+            .step_by(4)
+            .collect::<Vec<Option<Player>>>(),
+        player,
+    ) {
         return true;
     }
     // reverse diagonal
@@ -113,7 +130,7 @@ fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: Cell) -> bool {
             .into_iter()
             .step_by(2)
             .take(BOARD_LEN)
-            .collect::<Vec<Cell>>(),
+            .collect::<Vec<Option<Player>>>(),
         player,
     ) {
         return true;
@@ -122,8 +139,8 @@ fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: Cell) -> bool {
     false
 }
 
-fn cool_button(ui: &mut Ui, cell: &Cell) -> Response {
-    let button = Button::new(cell.as_str());
+fn cool_button(ui: &mut Ui, cell: &Option<Player>) -> Response {
+    let button = Button::new(cell.map_or("", |c| c.as_str()));
     ui.add_sized([100., 100.], button)
 }
 
