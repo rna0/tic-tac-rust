@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.17.0"
+
+[dev-dependencies]
+test-case = "2.0.2"

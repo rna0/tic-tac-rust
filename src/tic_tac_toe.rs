@@ -39,6 +39,7 @@ impl Player {
     }
 }
 
+// TODO: Should get Player and not Option (the check has already happened)
 pub fn play_cell(cell: &mut Option<Player>, player: Player) {
     *cell = Some(player);
 }
@@ -94,4 +95,43 @@ pub fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player)
     }
 
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Player;
+    use test_case::test_case;
+    #[test_case([None, None, None, None, None, None, None, None, None], false; "Empty Board")]
+    #[test_case([Some(Player::X), Some(Player::O), Some(Player::O),
+				Some(Player::X), Some(Player::X), Some(Player::O),
+				Some(Player::X), Some(Player::X), Some(Player::X)],
+				true; "Full Board")]
+    fn check_draw(cells: [Option<Player>; 9], is_draw: bool) {
+        assert_eq!(super::check_draw(cells), is_draw);
+    }
+
+    #[test_case(Player::X, [None, None, None, None, None, None, None, None, None], false; "Empty Board")]
+    #[test_case(Player::X, [Some(Player::X), Some(Player::O), Some(Player::O),
+							Some(Player::O), Some(Player::X), Some(Player::O),
+							Some(Player::X), Some(Player::O), Some(Player::X)],
+							true; "Draw")]
+    #[test_case(Player::X, [Some(Player::X), Some(Player::O), Some(Player::O),
+							Some(Player::O), Some(Player::X), Some(Player::O),
+							Some(Player::X), Some(Player::X), Some(Player::X)],
+							true; "Row Win")]
+    #[test_case(Player::X, [Some(Player::X), Some(Player::O), Some(Player::X),
+							Some(Player::O), Some(Player::X), Some(Player::X),
+							Some(Player::O), Some(Player::O), Some(Player::X)],
+							true; "Column Win")]
+    #[test_case(Player::X, [Some(Player::X), Some(Player::O), Some(Player::O),
+							Some(Player::X), Some(Player::X), Some(Player::O),
+							Some(Player::O), Some(Player::O), Some(Player::X)],
+							true; "Diagonal Win")]
+    #[test_case(Player::O, [Some(Player::X), Some(Player::X), Some(Player::O),
+							Some(Player::X), Some(Player::O), Some(Player::O),
+							Some(Player::O), Some(Player::O), Some(Player::X)],
+							true; "Reverse Diagonal Win")]
+    fn check_win(player: Player, cells: [Option<Player>; 9], is_win: bool) {
+        assert_eq!(super::check_win(cells, player), is_win);
+    }
 }
