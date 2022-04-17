@@ -17,8 +17,8 @@ impl TicTacToe {
     }
 }
 
-fn click_button(cell: &mut Cell, x_turn: &mut bool) {
-    if *x_turn {
+fn play_cell(cell: &mut Cell, x_turn: bool) {
+    if x_turn {
         *cell = Cell::X;
     } else {
         *cell = Cell::O;
@@ -52,28 +52,27 @@ impl App for TicTacToe {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &Frame) {
-        let mut buttons = Vec::with_capacity(BOARD_LEN * BOARD_LEN);
+        let board = self.cells.clone();
+
         CentralPanel::default().show(ctx, |ui| {
-            for row in 0..BOARD_LEN {
+            for (r, row) in board.chunks_exact(BOARD_LEN).enumerate() {
                 ui.horizontal(|ui| {
-                    for col in 0..BOARD_LEN {
-                        buttons.push(cool_button(ui, &self.cells[row * BOARD_LEN + col]));
+                    for (c, cell) in row.iter().enumerate() {
+                        if cool_button(ui, cell).clicked() && *cell == Cell::Empty {
+                            play_cell(&mut self.cells[r * BOARD_LEN + c], self.x_turn);
+
+                            let player = if self.x_turn { Cell::X } else { Cell::O };
+                            println!("Has won? {}", check_win(self.cells, player));
+                            if check_draw(self.cells) {
+                                println!("Draw");
+                            }
+
+                            self.x_turn = !self.x_turn;
+                        }
                     }
                 });
             }
         });
-
-        if let Some(i) = buttons.iter().position(|b| b.clicked()) {
-            if self.cells[i] == Cell::Empty {
-                click_button(&mut self.cells[i], &mut self.x_turn);
-                let player = if self.x_turn { Cell::X } else { Cell::O };
-                println!("Has won? {}", check_win(self.cells, &player));
-                if check_draw(self.cells) {
-                    println!("Draw");
-                }
-                self.x_turn = !self.x_turn;
-            }
-        }
     }
 
     fn name(&self) -> &str {
@@ -85,11 +84,11 @@ fn check_draw(cells: [Cell; BOARD_LEN * BOARD_LEN]) -> bool {
     cells.iter().all(|c| *c != Cell::Empty)
 }
 
-fn won_with_cells(cells: &[Cell], player: &Cell) -> bool {
-    cells.iter().all(|c| *c == *player)
+fn won_with_cells(cells: &[Cell], player: Cell) -> bool {
+    cells.iter().all(|c| *c == player)
 }
 
-fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: &Cell) -> bool {
+fn check_win(cells: [Cell; BOARD_LEN * BOARD_LEN], player: Cell) -> bool {
     // rows TODO: extract to functions
     for row in cells.chunks_exact(BOARD_LEN) {
         if won_with_cells(row, player) {
