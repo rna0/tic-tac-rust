@@ -22,18 +22,18 @@ impl App for TicTacToe {
                 ui.horizontal(|ui| {
                     for (c, cell) in row.iter().enumerate() {
                         if cool_button(ui, cell).clicked() && cell.is_none() {
-                            play_cell(&mut self.board[r * BOARD_LEN + c], self.player);
+                            play_cell(&mut self.board[r * BOARD_LEN + c], self.playing);
 
                             println!(
                                 "Has {} won? {}",
-                                self.player,
-                                check_win(self.board, self.player)
+                                self.playing,
+                                check_win(self.board, self.playing)
                             );
                             if check_draw(self.board) {
                                 println!("Draw");
                             }
 
-                            self.player = self.player.opponent();
+                            self.playing = self.playing.opponent();
                         }
                     }
                 });

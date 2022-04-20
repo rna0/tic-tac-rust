@@ -8,14 +8,15 @@ pub enum Player {
 }
 
 pub struct TicTacToe {
-    pub player: Player,
+    pub playing: Player,
     pub board: [Option<Player>; BOARD_LEN * BOARD_LEN],
+    // TODO: scoreboard
 }
 
 impl TicTacToe {
     pub fn new() -> TicTacToe {
         TicTacToe {
-            player: Player::X,
+            playing: Player::X,
             board: [None; BOARD_LEN * BOARD_LEN],
         }
     }
