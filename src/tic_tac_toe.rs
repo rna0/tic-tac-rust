@@ -14,8 +14,8 @@ pub struct TicTacToe {
     // TODO: scoreboard (eframe persistence feature)
 }
 
-impl TicTacToe {
-    pub fn new() -> TicTacToe {
+impl Default for TicTacToe {
+    fn default() -> TicTacToe {
         TicTacToe {
             playing: Player::X,
             board: [None; BOARD_LEN * BOARD_LEN],
