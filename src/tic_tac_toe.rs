@@ -7,6 +7,7 @@ pub enum Player {
     O,
 }
 
+#[derive(Clone)]
 pub struct TicTacToe {
     pub playing: Player,
     pub board: [Option<Player>; BOARD_LEN * BOARD_LEN],
