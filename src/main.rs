@@ -5,10 +5,21 @@ use eframe::run_native;
 mod tic_tac_toe;
 use tic_tac_toe::*;
 
-enum TTTApp {
+#[derive(Default)]
+struct TTTApp {
+    state: State,
+}
+
+enum State {
     Start,
     Game(TicTacToe),
     Finish(Option<Player>),
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::Start
+    }
 }
 
 impl App for TTTApp {
@@ -21,10 +32,10 @@ impl App for TTTApp {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &Frame) {
-        *self = match self {
-            TTTApp::Start => update_start(ctx),
-            TTTApp::Game(game) => update_game(game, ctx),
-            TTTApp::Finish(winner) => update_finish(ctx, winner),
+        self.state = match &mut self.state {
+            State::Start => update_start(ctx),
+            State::Game(game) => update_game(game.clone(), ctx),
+            State::Finish(winner) => update_finish(ctx, winner),
         }
     }
 
@@ -33,19 +44,20 @@ impl App for TTTApp {
     }
 }
 
-fn update_start(ctx: &Context) -> TTTApp {
-    let mut state = TTTApp::Start;
+fn update_start(ctx: &Context) -> State {
+    let mut state = State::Start;
     CentralPanel::default().show(ctx, |ui| {
         if ui.button("StartGame").clicked() {
-            state = TTTApp::Game(TicTacToe::new());
+            state = State::Game(TicTacToe::new());
         }
     });
 
     state
 }
 
-fn update_finish(ctx: &Context, winner: &mut Option<Player>) -> TTTApp {
-    let mut state = TTTApp::Finish(*winner);
+fn update_finish(ctx: &Context, winner: &Option<Player>) -> State {
+    let mut state = State::Finish(*winner);
+
     CentralPanel::default().show(ctx, |ui| {
         if ui
             .button(format!(
@@ -54,14 +66,14 @@ fn update_finish(ctx: &Context, winner: &mut Option<Player>) -> TTTApp {
             ))
             .clicked()
         {
-            state = TTTApp::Start;
+            state = State::Start;
         }
     });
 
     state
 }
 
-fn update_game(game: &mut TicTacToe, ctx: &Context) -> TTTApp {
+fn update_game(mut game: TicTacToe, ctx: &Context) -> State {
     let mut board = Vec::with_capacity(game.board.len());
 
     CentralPanel::default().show(ctx, |ui| {
@@ -80,17 +92,17 @@ fn update_game(game: &mut TicTacToe, ctx: &Context) -> TTTApp {
             play_cell(&mut game.board[i], game.playing);
 
             if check_win(game.board, game.playing) {
-                return TTTApp::Finish(Some(game.playing));
+                return State::Finish(Some(game.playing));
             }
             if check_draw(game.board) {
-                return TTTApp::Finish(None);
+                return State::Finish(None);
             }
 
             game.playing = game.playing.opponent();
         }
     }
 
-    TTTApp::Game(game.clone())
+    State::Game(game)
 }
 
 fn cool_button(ui: &mut Ui, cell: &Option<Player>) -> Response {
@@ -100,7 +112,7 @@ fn cool_button(ui: &mut Ui, cell: &Option<Player>) -> Response {
 
 fn main() {
     let size = [340., 340.];
-    let app = TTTApp::Start;
+    let app = TTTApp::default();
     let win_option = eframe::NativeOptions {
         initial_window_size: Some(size.into()),
         ..Default::default()
