@@ -15,30 +15,34 @@ impl App for TicTacToe {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &Frame) {
-        let board = self.board;
+        let mut board = Vec::with_capacity(self.board.len());
 
         CentralPanel::default().show(ctx, |ui| {
-            for (r, row) in board.chunks_exact(BOARD_LEN).enumerate() {
+            for row in self.board.chunks_exact(BOARD_LEN) {
                 ui.horizontal(|ui| {
-                    for (c, cell) in row.iter().enumerate() {
-                        if cool_button(ui, cell).clicked() && cell.is_none() {
-                            play_cell(&mut self.board[r * BOARD_LEN + c], self.playing);
-
-                            println!(
-                                "Has {} won? {}",
-                                self.playing,
-                                check_win(self.board, self.playing)
-                            );
-                            if check_draw(self.board) {
-                                println!("Draw");
-                            }
-
-                            self.playing = self.playing.opponent();
-                        }
+                    for cell in row.iter() {
+                        board.push(cool_button(ui, cell))
                     }
                 });
             }
         });
+
+        for (i, button) in board.iter().enumerate() {
+            if button.clicked() && self.board[i].is_none() {
+                play_cell(&mut self.board[i], self.playing);
+
+                println!(
+                    "Has {} won? {}",
+                    self.playing,
+                    check_win(self.board, self.playing)
+                );
+                if check_draw(self.board) {
+                    println!("Draw");
+                }
+
+                self.playing = self.playing.opponent();
+            }
+        }
     }
 
     fn name(&self) -> &str {

@@ -10,7 +10,7 @@ pub enum Player {
 pub struct TicTacToe {
     pub playing: Player,
     pub board: [Option<Player>; BOARD_LEN * BOARD_LEN],
-    // TODO: scoreboard
+    // TODO: scoreboard (eframe persistence feature)
 }
 
 impl TicTacToe {
@@ -54,15 +54,21 @@ fn won_with_cells(cells: &[Option<Player>], player: Player) -> bool {
     cells.iter().all(|o| o.map_or(false, |c| c == player))
 }
 
-// TODO: explore of using the board as 9 bit number for each player and just &= the hell out of it
+// TODO: explore using the board as 9 bit number for each player and just &= the hell out of it
 pub fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player) -> bool {
-    // rows TODO: extract to functions
-    for row in cells.chunks_exact(BOARD_LEN) {
-        if won_with_cells(row, player) {
-            return true;
-        }
-    }
-    // col
+    won_row(cells, player)
+        || won_col(cells, player)
+        || won_diagonal(cells, player)
+        || won_rev_diagonal(cells, player)
+}
+
+fn won_row(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player) -> bool {
+    cells
+        .chunks_exact(BOARD_LEN)
+        .any(|row| won_with_cells(row, player))
+}
+
+fn won_col(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player) -> bool {
     for col in 0..BOARD_LEN {
         let running = cells[col..].iter().copied();
         if won_with_cells(
@@ -72,18 +78,21 @@ pub fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player)
             return true;
         }
     }
-    // diagonal
-    if won_with_cells(
+    false
+}
+
+fn won_diagonal(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player) -> bool {
+    won_with_cells(
         &cells
             .into_iter()
             .step_by(4)
             .collect::<Vec<Option<Player>>>(),
         player,
-    ) {
-        return true;
-    }
-    // reverse diagonal
-    if won_with_cells(
+    )
+}
+
+fn won_rev_diagonal(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player) -> bool {
+    won_with_cells(
         &cells[2..]
             .iter()
             .copied()
@@ -91,11 +100,7 @@ pub fn check_win(cells: [Option<Player>; BOARD_LEN * BOARD_LEN], player: Player)
             .take(BOARD_LEN)
             .collect::<Vec<Option<Player>>>(),
         player,
-    ) {
-        return true;
-    }
-
-    false
+    )
 }
 
 #[cfg(test)]
